@@ -1,0 +1,22 @@
+rules_version = '2';
+
+// NOTE: This app uses a simple name-picker login with no password, so there's
+// no Firebase Auth identity to check here. These rules allow anyone with your
+// Firestore project's public config (i.e. anyone who can load the deployed
+// app) to read and write the "entries" and "config" data. That matches an
+// internal tool shared only via a private link — do NOT treat this as
+// access-controlled if the URL becomes widely known. Tightening this later
+// means adding real Firebase Auth and checking request.auth in these rules.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /entries/{entryId} {
+      allow read, write: if true;
+    }
+    match /config/{docId} {
+      allow read, write: if true;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
