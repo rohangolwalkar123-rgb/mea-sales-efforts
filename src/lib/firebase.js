@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { initializeFirestore } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -12,12 +12,25 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 
-/* Some networks (corporate proxies, VPNs, certain firewalls) silently
-   block Firestore's default WebChannel/streaming connection instead of
-   erroring — reads/writes just hang forever with nothing to catch.
-   experimentalAutoDetectLongPolling makes the SDK detect that case and
-   fall back to plain long-polling, which works through anything that
-   supports regular HTTP. */
+/* This app is used on networks where Firestore's default WebChannel
+   streaming connection is slow or gets silently blocked (corporate
+   proxies, VPNs, restrictive firewalls) — reads/writes can hang for a
+   long time with nothing to catch.
+
+   experimentalForceLongPolling skips the (slow, sometimes multi-second)
+   auto-detection probe and goes straight to plain HTTP long-polling,
+   which works through anything that supports regular HTTP requests.
+
+   persistentLocalCache queues writes in IndexedDB, not just memory, so
+   a write that's still in flight when the tab is refreshed doesn't just
+   vanish — it survives the reload and keeps trying to sync. It also
+   means a returning visitor's data renders instantly from the local
+   cache instead of waiting on the network every time.
+   persistentMultipleTabManager lets that cache work correctly even if
+   someone has the app open in two tabs at once. */
 export const db = initializeFirestore(app, {
-  experimentalAutoDetectLongPolling: true,
+  experimentalForceLongPolling: true,
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
 });
