@@ -182,7 +182,7 @@ export default function App() {
     setUser(name);
     setView(name === LEADERSHIP_NAME ? "dashboard" : "form");
     try { localStorage.setItem(USER_KEY, name); } catch {}
-    if (!team.includes(name)) {
+    if (name !== LEADERSHIP_NAME && !team.includes(name)) {
       addTeamMember(name).catch(() => {});
     }
   };
