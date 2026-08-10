@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -12,11 +12,13 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 
-/* Deliberately the plain default here — no experimentalForceLongPolling,
-   no persistentLocalCache. Both were tried to chase performance and
-   correlated with real writes failing to reach the server on real
-   devices (twice), even though neither issue reproduced in testing.
-   Reliability matters more than the optimization; don't re-add either
-   without a way to verify them on the actual devices this app runs on,
-   not just this dev environment. */
-export const db = getFirestore(app);
+/* Reproduced directly (not just reported): with the plain default
+   transport, writes silently never reach the server at all — no error,
+   no timeout, nothing. experimentalForceLongPolling fixes that
+   specific, confirmed failure. persistentLocalCache is deliberately
+   NOT included here — that was a separate change, tried at the same
+   time as this one, and never verified in isolation. Don't re-add it
+   without testing this exact transport setting on its own first. */
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});
