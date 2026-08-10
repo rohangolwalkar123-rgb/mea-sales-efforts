@@ -73,9 +73,9 @@ const addDays = (iso, n) => {
   return toISODate(d);
 };
 const fmtDate = (iso) =>
-  new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  iso ? new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 const fmtDateShort = (iso) =>
-  new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+  iso ? new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : "—";
 const fmtWeek = (iso) => {
   const start = new Date(iso + "T00:00:00");
   const end = new Date(start); end.setDate(end.getDate() + 4); // Friday — working days only
@@ -772,6 +772,14 @@ function computeRange(selectedWeek, entries) {
   return { start: selectedWeek, end: addDays(selectedWeek, 6) };
 }
 
+/* Which week an entry belongs to is whatever "Week of" was chosen when it
+   was logged (e.weekOf) — not a date range recomputed from the calendar.
+   That's the field people explicitly set, so it's the source of truth for
+   grouping, and it sidesteps any ambiguity about where weekends fall. */
+function filterByWeek(entries, selectedWeek) {
+  return selectedWeek === ALL_TIME ? entries : entries.filter((e) => e.weekOf === selectedWeek);
+}
+
 function Dashboard({ entries, team, selectedWeek, setSelectedWeek }) {
   const weeks = useMemo(() => weeksAvailable(entries), [entries]);
   const defaultWeek = useMemo(() => {
@@ -783,8 +791,8 @@ function Dashboard({ entries, team, selectedWeek, setSelectedWeek }) {
 
   const range = computeRange(effectiveWeek, entries);
   const filtered = useMemo(
-    () => entries.filter((e) => e.date >= range.start && e.date <= range.end),
-    [entries, range.start, range.end]
+    () => filterByWeek(entries, effectiveWeek),
+    [entries, effectiveWeek]
   );
 
   const activeSellers = new Set(filtered.map((e) => e.name)).size;
@@ -1131,8 +1139,8 @@ function DetailedActivity({ entries, user, onUpdate, onDelete, selectedWeek, set
 
   const range = computeRange(effectiveWeek, visibleEntries);
   const filtered = useMemo(
-    () => visibleEntries.filter((e) => e.date >= range.start && e.date <= range.end && (seller === ALL_SELLERS || e.name === seller)),
-    [visibleEntries, range.start, range.end, seller]
+    () => filterByWeek(visibleEntries, effectiveWeek).filter((e) => seller === ALL_SELLERS || e.name === seller),
+    [visibleEntries, effectiveWeek, seller]
   );
   const searched = useMemo(() => {
     if (!query.trim()) return filtered;
