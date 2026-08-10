@@ -149,25 +149,29 @@ export default function App() {
     // original workbook's historical rows. No-ops once any entry exists.
     seedIfEmpty(SEED_ENTRIES).catch(() => {});
 
-    let sawFirstEntriesSnapshot = false;
+    const describeError = (err) =>
+      err.code === "permission-denied"
+        ? "Firestore is rejecting reads/writes (permission-denied). The security rules probably haven't been published yet — see firestore.rules in the project."
+        : `Couldn't connect to Firestore: ${err.message}`;
+
+    // Entries can be a large, slow-to-fully-sync collection, especially on
+    // constrained connections — don't make people wait on it just to see
+    // the login screen. It streams in and updates the UI whenever it's
+    // ready; only the tiny "team" doc gates the boot spinner.
     const unsubEntries = subscribeEntries(
-      (list) => {
-        setEntries(list);
-        if (!sawFirstEntriesSnapshot) {
-          sawFirstEntriesSnapshot = true;
+      (list) => setEntries(list),
+      (err) => { setBootError(describeError(err)); setBooting(false); }
+    );
+    let sawFirstTeamSnapshot = false;
+    const unsubTeam = subscribeTeam(
+      (members) => {
+        setTeam(members && members.length ? members : DEFAULT_TEAM);
+        if (!sawFirstTeamSnapshot) {
+          sawFirstTeamSnapshot = true;
           setBooting(false);
         }
       },
-      (err) => {
-        setBootError(err.code === "permission-denied"
-          ? "Firestore is rejecting reads/writes (permission-denied). The security rules probably haven't been published yet — see firestore.rules in the project."
-          : `Couldn't connect to Firestore: ${err.message}`);
-        setBooting(false);
-      }
-    );
-    const unsubTeam = subscribeTeam(
-      (members) => setTeam(members && members.length ? members : DEFAULT_TEAM),
-      () => {} // surfaced via the entries listener above; avoid a duplicate error banner
+      (err) => { setBootError(describeError(err)); setBooting(false); }
     );
 
     return () => { unsubEntries(); unsubTeam(); };
