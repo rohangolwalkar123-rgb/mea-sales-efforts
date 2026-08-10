@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -11,4 +11,13 @@ const firebaseConfig = {
 };
 
 export const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+
+/* Some networks (corporate proxies, VPNs, certain firewalls) silently
+   block Firestore's default WebChannel/streaming connection instead of
+   erroring — reads/writes just hang forever with nothing to catch.
+   experimentalAutoDetectLongPolling makes the SDK detect that case and
+   fall back to plain long-polling, which works through anything that
+   supports regular HTTP. */
+export const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+});
