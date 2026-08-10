@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import * as XLSX from "xlsx";
 import {
   ChevronDown, LogOut, LayoutDashboard, PenSquare, Check,
   Radio, Users, TrendingUp, Calendar, Loader2, AlertCircle, Building2, Handshake,
@@ -86,8 +85,12 @@ const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 /* Exports entries as a real .xlsx file the user can open in Excel/Sheets —
    this is the authoritative, portable copy of the data, independent of
-   the app's own storage. */
-function exportEntriesToExcel(entries, label) {
+   the app's own storage. xlsx (SheetJS) is a large library that doesn't
+   tree-shake, so it's dynamically imported here instead of at the top of
+   the file — nobody pays for it in the initial bundle unless they
+   actually click an export button. */
+async function exportEntriesToExcel(entries, label) {
+  const XLSX = await import("xlsx");
   const rows = entries.map((e) => ({
     "Week Of": e.weekOf || "",
     "Date": e.date || "",
