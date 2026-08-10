@@ -234,7 +234,10 @@ export default function App() {
     return (
       <div style={{ ...S.page, alignItems: "center", justifyContent: "center", display: "flex" }}>
         <FontLoader />
-        <Loader2 className="animate-spin" size={22} color={C.gold} />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          <Loader2 className="animate-spin" size={22} color={C.gold} />
+          <BootMessage />
+        </div>
       </div>
     );
   }
@@ -743,6 +746,29 @@ function SectionHeading({ eyebrow, title, sub }) {
       <div className="mono" style={{ fontSize: 11, letterSpacing: 1.2, color: C.gold, fontWeight: 600, marginBottom: 6 }}>{eyebrow.toUpperCase()}</div>
       <div className="disp" style={{ fontSize: 23, fontWeight: 700, letterSpacing: -0.3 }}>{title}</div>
       {sub && <div style={{ fontSize: 13.5, color: C.muted, marginTop: 4, maxWidth: 620 }}>{sub}</div>}
+    </div>
+  );
+}
+
+/* First load on a given device/browser has to fetch everything fresh —
+   every load after that is close to instant, served from that device's
+   local cache. Without an explanation the first, slower load just looks
+   broken, so make that one-time cost explicit. */
+function BootMessage() {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 4000);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div style={{ textAlign: "center", maxWidth: 280 }}>
+      <div style={{ fontSize: 13, color: C.muted }}>Loading…</div>
+      {slow && (
+        <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>
+          First time on this device — this can take a little longer.
+          It'll load instantly from here on.
+        </div>
+      )}
     </div>
   );
 }
