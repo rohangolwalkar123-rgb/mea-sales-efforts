@@ -192,32 +192,35 @@ export default function App() {
     try { localStorage.removeItem(USER_KEY); } catch {}
   };
 
+  /* Firestore applies writes to the local cache (and to every onSnapshot
+     listener, including this tab's own) the moment they're issued — the
+     promise these calls return only settles once the server round-trip
+     acknowledges the write, which can hang for a long time on flaky or
+     restrictive connections. Blocking the UI on that round-trip meant the
+     "Saving…" button could freeze for a minute+ even though the write had
+     already gone through locally. So: don't await it. Let the form/button
+     unblock immediately, and surface the toast whenever the round-trip
+     actually settles (success or failure) in the background. */
   const handleAddEntry = async (entry) => {
     const withMeta = { ...entry, id: uid(), loggedAt: new Date().toISOString() };
-    try {
-      await fsAddEntry(withMeta);
-      showToast("Activity logged.", "ok");
-    } catch {
-      showToast("Couldn't save — check your connection and try again.", "err");
-    }
+    fsAddEntry(withMeta).then(
+      () => showToast("Activity logged.", "ok"),
+      () => showToast("Couldn't save — check your connection and try again.", "err")
+    );
   };
 
   const handleUpdateEntry = async (id, updates) => {
-    try {
-      await fsUpdateEntry(id, updates);
-      showToast("Entry updated.", "ok");
-    } catch {
-      showToast("Couldn't save the update — check your connection.", "err");
-    }
+    fsUpdateEntry(id, updates).then(
+      () => showToast("Entry updated.", "ok"),
+      () => showToast("Couldn't save the update — check your connection.", "err")
+    );
   };
 
   const handleDeleteEntry = async (id) => {
-    try {
-      await fsDeleteEntry(id);
-      showToast("Entry deleted.", "ok");
-    } catch {
-      showToast("Couldn't save the deletion — check your connection.", "err");
-    }
+    fsDeleteEntry(id).then(
+      () => showToast("Entry deleted.", "ok"),
+      () => showToast("Couldn't save the deletion — check your connection.", "err")
+    );
   };
 
   if (booting) {
