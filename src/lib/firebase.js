@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { initializeFirestore, persistentLocalCache } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -17,14 +17,7 @@ export const app = initializeApp(firebaseConfig);
    erroring — reads/writes just hang forever with nothing to catch.
    experimentalAutoDetectLongPolling makes the SDK detect that case and
    fall back to plain long-polling, which works through anything that
-   supports regular HTTP.
-
-   persistentLocalCache keeps a copy of everything in IndexedDB, so once
-   a browser has loaded the data once, every later visit renders from
-   that local cache instantly while the live listener catches up in the
-   background — the slow first-load round-trip only has to happen once
-   per device. */
+   supports regular HTTP. */
 export const db = initializeFirestore(app, {
   experimentalAutoDetectLongPolling: true,
-  localCache: persistentLocalCache(),
 });
